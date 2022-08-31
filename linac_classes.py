@@ -127,7 +127,8 @@ class accelerator:
         self.particles = []
         self.beam = []
         self.segments = []
-        self.seg_positions = []
+        self.seg_positions1 = []
+        self.seg_positions2 = []
     
     def add_particle(self, particle):
         self.particles.append(particle)
@@ -135,16 +136,18 @@ class accelerator:
 
     def add_segment(self, seg):
         self.segments.append(seg)
-        if(len(self.seg_positions)==0):
-            self.seg_positions.append(seg.l)
+        if(len(self.seg_positions1)==0):
+            self.seg_positions1.append(0)
+            self.seg_positions2.append(seg.l)
         else:
-            self.seg_positions.append(seg.l+self.seg_positions[-1])
+            self.seg_positions1.append(self.seg_positions2[-1]+self.d)
+            self.seg_positions2.append(self.seg_positions1[-1]+seg.l)
 
         if(seg.name=="collimator"):
             seg.efac = 0
 
         elif(seg.name=="electrode"):
-            seg.efac = (-1)**(len(self.electrodes))*np.sign(self.particles[0].q)
+            seg.efac = (-1)**(len(self.segments))*np.sign(self.particles[0].q)
 
 
 
@@ -152,12 +155,13 @@ class accelerator:
         self.d = d
 
     def particle_position(self, current_particle):
-        for i, x in enumerate(self.seg_positions):
+        for i, x in enumerate(self.seg_positions2):
             if current_particle.r[-1, 2]>x:
                 current_particle.segment = i+1
 
     def evolve(self):
-        while self.beam[0].r[-1, 2]<self.seg_positions[-1]*1.5:
+        steps = 0
+        while self.beam[0].r[-1, 2]<self.seg_positions2[-1]+(self.seg_positions2[-1]-self.seg_positions1[-1])*0.5:
             N = len(self.beam)
             j = 0
             while j<N:
@@ -169,3 +173,7 @@ class accelerator:
                         continue
                 self.particle_position(self.beam[j])
                 j += 1
+            steps += 1
+            if(len(self.beam)==0):
+                break
+        return steps

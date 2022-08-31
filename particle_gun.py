@@ -5,7 +5,7 @@ from mpl_toolkits.mplot3d import Axes3D
 
 #generate N electrons in random directions from the source with an average velocity v_ave and deviation v_dev
 
-N = 1e1
+N = 5
 v_ave = 3e4
 v_dev = v_ave/10
 
@@ -25,11 +25,12 @@ for i in range(int(N)):
 
 
 #collimator
-linac.add_segment(lc.collimator(0.5, 0.015))
+
 
 #print(linac.particles[0].r)
-print(linac.seg_positions)
-linac.evolve()
+#print(linac.seg_positions)
+#linac.add_segment(lc.collimator(0.5, 0.015))
+#linac.evolve()
 # for i in range(int(N)):
 #     print(linac.particles[i].v[0])
 # print("positions")
@@ -46,7 +47,7 @@ linac.evolve()
     #plt.plot(linac.particles[i].r[:,2], np.sqrt(linac.particles[i].r[:,0]**2+linac.particles[i].r[:,1]**2))
 #plt.show()
 
-particles = [linac.particles[i].r for i in range(len(linac.particles))]
+#particles = [linac.particles[i].r for i in range(len(linac.particles))]
 
 # print("list positions")
 # for i in range(int(N)):
