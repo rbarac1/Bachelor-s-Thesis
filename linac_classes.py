@@ -2,6 +2,9 @@ import numpy as np
 
 c = 299792458
 
+Vmax = 1e11  #max voltage
+omega = 100   #AC frequency
+
 def gamma(v):
     return 1/np.sqrt(1-v*v/c/c)
 
@@ -26,9 +29,21 @@ class particle:
 
         self.segment = 0
 
+        self.starts = 0   #number of passed starts of a linac segment
+        self.stops = 0   #number of passed stops of a linac segment
+        self.d = 0  #distance of electrodes in the accelerator
+
+        #self.x = 0  #start of the segment with an electric field
+
     def __ac(self, v):
-        F_clas = self.q*(self.E+np.cross(v, self.B))
-        return 1/self.m/gamma(v)*(F_clas-np.dot(F_clas,v)*v/c/c)
+        if self.starts > self.stops:
+            return 0
+        else:
+            #self.E = np.array([self.q*Vmax*2/self.d*np.cos(omega*self.t[-1]),self.q*Vmax*2/self.d*np.cos(omega*self.t[-1]),0])
+            self.E = np.array([0,0,self.q*Vmax*2/self.d*np.cos(omega*self.t[-1])])
+            F_clas = self.q*(self.E+np.cross(v, self.B))
+            #print("AAAAAAAAA")
+            return 1/self.m/gamma(v)*(F_clas-np.dot(F_clas,v)*v/c/c)
         #return (self.q*(self.E+np.cross(v, self.B))/self.m) / (dgamma(v)*v+gamma(v))
 
     def move(self, met="RK4"):
@@ -165,7 +180,26 @@ class accelerator:
             N = len(self.beam)
             j = 0
             while j<N:
+                #checking where the particle is
+                if steps==0:
+                    self.beam[j].starts = 1
+                    self.beam[j].d = self.d
+                else:
+                    if self.beam[j].starts != len(self.seg_positions1):
+                        if self.beam[j].r[-1,2]>self.seg_positions1[self.beam[j].starts] and self.beam[j].r[-2,2]<self.seg_positions1[self.beam[j].starts]:
+                            self.beam[j].starts += 1
+                            print("A")
+
+                    if self.beam[j].stops != len(self.seg_positions2):     
+                        if self.beam[j].r[-1,2]>self.seg_positions2[self.beam[j].stops] and self.beam[j].r[-2,2]<self.seg_positions2[self.beam[j].stops]:
+                            #self.x = self.seg_positions1[self.beam[j].stops]
+                            self.beam[j].stops += 1
+                            print("B")
+
+                #moving the particle
                 self.beam[j].move()
+
+                #checking if the particle hit the boundary
                 if self.beam[j].segment<len(self.segments):
                     if self.beam[j].r[-1,0]**2+self.beam[j].r[-1,1]**2>self.segments[self.beam[j].segment].R**2:
                         self.beam.pop(j)
