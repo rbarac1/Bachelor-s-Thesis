@@ -26,9 +26,9 @@ ax = fig.add_subplot(111,projection="3d")
 
 
 
-pg.linac.set_electrode_distance(0.5)
-pg.linac.add_segment(lc.collimator(0.5, 0.015))
-pg.linac.add_segment(lc.electrode(1.0, 0.1))
+pg.linac.set_electrode_distance(0.7)
+pg.linac.add_segment(lc.collimator(0.3, 0.01))
+pg.linac.add_segment(lc.electrode(0.2, 0.1))
 
 
 
@@ -81,7 +81,8 @@ for i in range(len(pg.linac.segments)):
 # Z = np.sin(R)
 
 # ax.plot_surface(X, Y, Z)
-ax.view_init(20,-70)
+# ax.view_init(20,-70)
+ax.view_init(0,-90)
 ax.set_title("Linac")
 
 #plt.show()

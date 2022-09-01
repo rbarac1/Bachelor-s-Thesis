@@ -5,8 +5,8 @@ from mpl_toolkits.mplot3d import Axes3D
 
 #generate N electrons in random directions from the source with an average velocity v_ave and deviation v_dev
 
-N = 5
-v_ave = 3e4
+N = 1
+v_ave = 3e1
 v_dev = v_ave/10
 
 #particles = []
@@ -16,12 +16,12 @@ linac = lc.accelerator()
 #electrons
 for i in range(int(N)):
     v = np.random.normal(v_ave, v_dev)
-    theta = np.random.random()*10*np.pi/180
-    fi = np.random.random()*360*np.pi/180
+    theta = np.random.random()*10*np.pi/180*0
+    fi = np.random.random()*360*np.pi/180*0
 
     #print(v, theta, fi, v*np.cos(theta))
     #print(v*np.sin(theta)*np.cos(fi), v*np.sin(theta)*np.sin(fi), v*np.cos(theta))
-    linac.add_particle(lc.electron([v*np.sin(theta)*np.cos(fi), v*np.sin(theta)*np.sin(fi), v*np.cos(theta)]))
+    linac.add_particle(lc.electron([v*np.sin(theta)*np.cos(fi), v*np.sin(theta)*np.sin(fi), v*np.cos(theta)], dt=1e-4))
 
 
 #collimator
