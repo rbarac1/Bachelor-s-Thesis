@@ -20,3 +20,13 @@ ax = fig.add_subplot(111,projection="3d")
 
 
 ###########################################################################################################
+pos = []
+for i in range(20):
+    pos.append([])
+
+print(pos)
+print(len(pos))
+
+pos = [20*[]]
+print(pos)
+print(len(pos))

@@ -4,11 +4,14 @@ import numpy as np
 
 c = 299792458   #speed of light
 
-Vmax = 2e6  #max source voltage
-omega = 3e8*2*np.pi   #AC frequency
 
-#protons?
-#omega = 2.5e9*2*np.pi
+#CERN Linac4
+Vmax = 3e5  #max source voltage
+omega = 352e6*2*np.pi   #AC frequency
+
+#protons and ions
+# Vmax = 5e7
+# omega = 300e6
 
 #T=2*pi/omega=1/3e8
 
@@ -21,8 +24,11 @@ def gamma(v):   #Lorentz factor
 # def dgamma(v):  #dgamma/dv
 #     return 1/np.sqrt(1-v*v/c/c)**3*v/c/c
 
-def En(v,m):
+def En(v,m):    #particle energy
     return gamma(v)*m*c*c
+
+def Ekin(v, m):     #particle kinetic energy in MeV
+    return (gamma(v)-1)*m*c*c*(6.242e12)
 
 def v2fromE(E, m):
     return c**2*(1-(m*m*c**4)/(E*E))
@@ -54,7 +60,9 @@ class particle:
         self.stops = 0   #number of passed stops of a linac segment
         self.d = 0  #distance of electrodes in the accelerator
 
-        self.En = 0     #energy of the particle (in joules)
+        self.En = 0     #total energy of the particle (in joules)
+
+        self.E_MeV = []     #kinetic energy of a particle in MeV
 
         #self.x = 0  #start of the segment with an electric field
 
@@ -209,6 +217,12 @@ class proton(particle):         #proton subclass
         self.m = 1.67262192e-27     #proton mass
         self.q = 1.60217663e-19     #proton charge
         super(proton, self).__init__(self.q, self.m, v0, E, B, dt)
+
+class ion(particle):         #ion subclass
+    def __init__(self, v0, C, A, E=[0.,0.,0.], B=[0.,0.,0.], dt=1e-7):
+        self.m = A*1.66e-27     #ion mass
+        self.q = C*1.60217663e-19     #ion charge
+        super(ion, self).__init__(self.q, self.m, v0, E, B, dt)
 ###############################################################################################################
 ###############################################################################################################
 
@@ -257,6 +271,12 @@ class accelerator:
         self.R = 0  #electrode radii
         self.t0 =  0    #average time to get to the end of the first collimator
 
+        self.v1 = []
+        self.E1 = []
+        
+        self.v2 = []
+        self.E2 = []
+
     def reset(self, collimator="keep"):     #reset the accelerator (deletes all segments and particles)
         self.particles = []
         self.beam = []
@@ -299,6 +319,12 @@ class accelerator:
         self.seg_positions2.pop()
         self.d.pop()
 
+    def change_to_collimator(self, l, R):   #changes the last segment to a collimator
+        self.seg_positions2[-1] = self.seg_positions2[-1]-self.segments[-1].l+l
+        self.segments[-1].l = l
+        self.segments[-1].R = R
+
+
     def set_electrode_distance(self, d):        #add a new distance between the electrodes
         self.d.append(d)
 
@@ -322,6 +348,7 @@ class accelerator:
             while j<N:
                 if steps==0:
                     self.beam[j].starts = 1
+                    self.beam[j].dtc *= 10
                 #moving the particle
                 self.beam[j].move()
 
@@ -371,15 +398,15 @@ class accelerator:
     #     return steps
 
     def testrun_evolve(self, Nel):
-        eps1 = 0.01      #field error
-        eps2 = 0.01      #separation error
+        eps1 = 0.035      #field error
+        eps2 = 0.03      #separation error
 
         #1st collimator
         self.beam[0].starts = 1
         self.beam[0].stops = 0
 
         if len(self.beam)!=1:
-            print("Error, the number of particles should be 1!")
+            print("Error, the number of particles should be 1! it is currently: ", len(self.beam))
 
         print(self.beam[0].r[-1, 2], self.beam[0].v[-1, 2])
         print(self.seg_positions2[-1])
@@ -392,7 +419,7 @@ class accelerator:
                 print("ERROR")
 
         
-        self.beam[0].dtc *= 0.0001   #lowering the dt in case E is very strong
+        self.beam[0].dtc *= 0.01   #lowering the dt in case E is very strong
         dtcstart = self.beam[0].dtc     #saving it for later (variable dt)
         
         print(self.beam[0].r[-1, 2])
@@ -400,7 +427,7 @@ class accelerator:
         self.beam[0].stops = 1
 
         #1st optimal electrode distance guess
-        v = 0.1*(3*self.beam[0].v[-1,2]+7*c)
+        v = 0.1*(9.7*self.beam[0].v[-1,2]+0.3*c)
         d = v*np.pi/omega
 
         #current number of electrodes
@@ -414,6 +441,7 @@ class accelerator:
         
         #velocities for comparing to analytical solutions
         v_antests = [self.beam[0].v[-1,2]]
+
 
         while Nc<Nel:
             #adding a test segment
@@ -454,38 +482,58 @@ class accelerator:
                 #distance to the end of the electrode as a proportion of the electrode length
                 d_end = np.abs((self.beam[0].r[-1,2]-self.seg_positions1[-1])/d)
 
+                if self.beam[0].r[-1, 2] > self.seg_positions1[-1]:
+                    d = 1.1*d
+                    print("z=",self.beam[0].r[-1,2]-self.seg_positions2[-2])
+                    self.pop_segment()
+                    print("v=", self.beam[0].v[-1,2])
+                    print("dt=", self.beam[0].t[-1]-self.beam[0].t[-2])
+                    print("steps=", steps)
+                    print("electrode: ", len(self.segments))
+                    self.beam[0].remove_steps(steps)
+
+                    #for E_prev in the next loop
+                    E = self.beam[0].E_field()[2]
+
+                    print("TOO SHORT!")
+                    break
+
                 if np.abs(E/Emax) < eps1 and d_end < eps2:
                     #setting the correct length of the electrode with E=0 inside
 
+                    while self.beam[0].r[-1, 2] < self.seg_positions1[-1]:
+                        self.beam[0].move()
+
                     #OLD SEGMENTS
-                    print("OLD SEGMENTS:")
-                    print("starts: ", self.seg_positions1)
-                    print("stops: ", self.seg_positions2)
+                    # print("OLD SEGMENTS:")
+                    # print("starts: ", self.seg_positions1)
+                    # print("stops: ", self.seg_positions2)
 
                     self.pop_segment()
 
                     #AFTER POP
-                    print("AFTER POP:")
-                    print("starts: ", self.seg_positions1)
-                    print("stops: ", self.seg_positions2)
-
+                    #print("AFTER POP:")
+                    #print("starts: ", self.seg_positions1)
+                    #print("stops: ", self.seg_positions2)
+                    #d = (1-d_end)*d
 
                     self.d.append(d)
                     self.add_segment(electrode(self.beam[0].v[-1, 2]*np.pi/omega, self.R))
 
-                    #NEW SEGMENTS
-                    print("\nNEW SEGMENTS:")
-                    print("starts: ", self.seg_positions1)
-                    print("stops: ", self.seg_positions2)
+                    # NEW SEGMENTS
+                    # print("\nNEW SEGMENTS:")
+                    # print("starts: ", self.seg_positions1)
+                    # print("stops: ", self.seg_positions2)
 
 
                     Nc += 1
-                    print("dt=", self.beam[0].t[-1]-self.beam[0].t[-2])
-                    print("v=", self.beam[0].v[-1,2])
+                    # print("dt=", self.beam[0].t[-1]-self.beam[0].t[-2])
+                    # print("v=", self.beam[0].v[-1,2])
+                    print("d_gaps", d+self.segments[-1].l)
                     print("beta=", self.beam[0].v[-1,2]/c)
 
                     #preparing for the next electrode
-                    v = 0.1*(self.beam[0].v[-1,2]+9*c)
+                    v = 0.1*(9.7*self.beam[0].v[-1,2]+0.3*c)
                     d = v*np.pi/omega
 
                     self.beam[0].starts += 1
@@ -497,12 +545,14 @@ class accelerator:
 
                     self.beam[0].stops += 1
                     
-                    print("beta_new_el", self.beam[0].v[-1,2]/c)
+                    #print("beta_new_el", self.beam[0].v[-1,2]/c)
                     #for E_prev in the next loop
                     E = self.beam[0].E_field()[2]
 
                     print("steps=", steps)
                     print("SUCCESS!\n\n\n")
+
+                    self.beam[0].E_MeV.append(Ekin(self.beam[0].v[-1,2], self.beam[0].m))
 
                     break
 
@@ -527,24 +577,11 @@ class accelerator:
 
                     break
 
-                if self.beam[0].r[-1, 2] > self.seg_positions1[-1]:
-                    d = 1.1*d
-                    print("z=",self.beam[0].r[-1,2]-self.seg_positions2[-2])
-                    self.pop_segment()
-                    print("v=", self.beam[0].v[-1,2])
-                    print("dt=", self.beam[0].t[-1]-self.beam[0].t[-2])
-                    print("steps=", steps)
-                    print("electrode: ", len(self.segments))
-                    self.beam[0].remove_steps(steps)
-
-                    #for E_prev in the next loop
-                    E = self.beam[0].E_field()[2]
-
-                    print("TOO SHORT!")
-                    break
+                
 
         print("velocities", v_antests)
         print("d", self.d)
+        print("seg.l", [self.segments[i].l for i in range(len(self.segments))])
         for i in range(len(self.d)):
             print("vtest ratio: ", vratio(self.beam[0].q,self.beam[0].m,self.d[i], v_antests[i], v_antests[i+1]))
 
@@ -552,13 +589,27 @@ class accelerator:
 
     def evolve(self):
         steps = 0
-        print("EVOLVE1")
-        print(self.beam[0].r[-1, 2], self.seg_positions1[-1], self.seg_positions2[-1])
-        while self.beam[0].r[-1, 2]<self.seg_positions2[-1]+(self.seg_positions2[-1]-self.seg_positions1[-1])*0.5:
+        mod_dt = 0      #dt modification
+        N_gaps = len(self.d)
+        #print("EVOLVE1")
+        #print(self.beam[0].r[-1, 2], self.seg_positions1[-1], self.seg_positions2[-1])
+        while self.beam[0].r[-1, 2]<self.seg_positions2[-1]+(self.seg_positions2[-1]-self.seg_positions1[-1])*4:      #steps loop
             N = len(self.beam)
+
+            if mod_dt==0 and self.beam[0].t[-1]>0.95*self.t0:
+                mod_dt = 1
+                for j in range(N):
+                    self.beam[j].dtc *= 0.01
+                
+            elif mod_dt==1 and self.beam[0].v[-1,2]>0.92*c:
+                mod_dt = 2
+                for j in range(N):
+                    self.beam[j].dtc *= 100
+
             j = 0
-            print("EVOLVE2")
-            while j<N:
+
+            #print("EVOLVE2")
+            while j<N:      #particles loop
                 #checking where the particle is
                 if steps==0:
                     self.beam[j].starts = 1
@@ -568,22 +619,45 @@ class accelerator:
                     if self.beam[j].starts != len(self.seg_positions1):
                         if self.beam[j].r[-1,2]>self.seg_positions1[self.beam[j].starts] and self.beam[j].r[-2,2]<self.seg_positions1[self.beam[j].starts]:
                             self.beam[j].starts += 1
-                            print("A")
+
+                            # if self.beam[j].starts==len(self.segments):
+                            #     self.v2.append(np.sqrt(np.dot(self.beam[j].v[-1], self.beam[j].v[-1])))
+                            #     self.E2.append(Ekin(self.v2[-1], self.beam[j].m))
+                            #     self.v2[-1] *= 1/c
+                            #print("A")
 
                     if self.beam[j].stops != len(self.seg_positions2):     
                         if self.beam[j].r[-1,2]>self.seg_positions2[self.beam[j].stops] and self.beam[j].r[-2,2]<self.seg_positions2[self.beam[j].stops]:
                             #self.x = self.seg_positions1[self.beam[j].stops]
-                            self.beam[j].d = self.d[self.beam[j].stops]
+                            if self.beam[j].stops<N_gaps:
+                                self.beam[j].d = self.d[self.beam[j].stops]
                             self.beam[j].stops += 1
-                            print("B")
 
+                            if self.beam[j].stops==1:
+                                self.v1.append(np.sqrt(np.dot(self.beam[j].v[-1], self.beam[j].v[-1])))
+                                self.E1.append(Ekin(self.v1[-1], self.beam[j].m))
+                                self.v1[-1] *= 1/c
+
+                            if self.beam[j].stops==len(self.segments):
+                                self.v2.append(np.sqrt(np.dot(self.beam[j].v[-1], self.beam[j].v[-1])))
+                                self.E2.append(Ekin(self.v2[-1], self.beam[j].m))
+                                self.v2[-1] *= 1/c
+                            #print("B")
+
+            
                 #moving the particle
                 self.beam[j].move()
-                print("EVOLVE3")
+                #print("EVOLVE3")
 
                 #checking if the particle hit the boundary
                 if self.beam[j].stops<len(self.segments):
                     if self.beam[j].r[-1,0]**2+self.beam[j].r[-1,1]**2>self.segments[self.beam[j].stops].R**2:
+
+                        #to make the plots more realistic
+                        self.beam[j].r[-1] = (self.beam[j].r[-1]+3*self.beam[j].r[-2])/4
+                        self.beam[j].r[-1] *= (self.beam[j].r[-1, 2]**2+self.segments[self.beam[j].stops].R**2)/np.dot(self.beam[j].r[-1], self.beam[j].r[-1])
+                        # self.beam[j].r = np.delete(self.beam[j].r, -1, 0)
+                        #print(self.beam[j].r[-1])
                         self.beam.pop(j)
                         N -= 1
                         continue

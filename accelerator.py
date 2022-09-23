@@ -1,5 +1,5 @@
 from turtle import color
-import particle_gun as pg
+import accelerator_construction as ac
 import numpy as np
 
 import linac_classes as lc
@@ -26,25 +26,25 @@ ax = fig.add_subplot(111,projection="3d")
 
 
 
-pg.linac.set_electrode_distance(0.7)
-pg.linac.add_segment(lc.collimator(0.3, 0.01))
-pg.linac.add_segment(lc.electrode(0.2, 0.1))
+ac.linac.set_electrode_distance(0.7)
+ac.linac.add_segment(lc.collimator(0.3, 0.01))
+ac.linac.add_segment(lc.electrode(0.2, 0.1))
 
 
 
 
 
-Nsteps = pg.linac.evolve()
+Nsteps = ac.linac.evolve()
 #print(Nsteps)
 # Create lines initially without data
-particles = [pg.linac.particles[i].r[:, [2, 0, 1]] for i in range(len(pg.linac.particles))]
+particles = [ac.linac.particles[i].r[:, [2, 0, 1]] for i in range(len(ac.linac.particles))]
 #particles = [particle_gun.particles[i] for i in range(len(particle_gun.linac.particles))]
 #print(particles[0][10])
 lines = [ax.plot([], [], [], color="blue")[0] for _ in particles]
 #print(particle_gun.particles[0][10])
 # Setting the axes properties
-ax.set(xlim3d=(0, pg.linac.seg_positions2[-1]+(pg.linac.seg_positions2[-1]-pg.linac.seg_positions1[-1])*0.5), xlabel='Z')
-xy_max = pg.linac.segments[-1].R*1.35
+ax.set(xlim3d=(0, ac.linac.seg_positions2[-1]+(ac.linac.seg_positions2[-1]-ac.linac.seg_positions1[-1])*0.5), xlabel='Z')
+xy_max = ac.linac.segments[-1].R*1.35
 ax.set(ylim3d=(-xy_max, xy_max), ylabel='X')
 ax.set(zlim3d=(-xy_max, xy_max), zlabel='Y')
 
@@ -68,9 +68,9 @@ def data_for_cylinder_along_z(center_x,center_y,radius,height_z, z0):
 
 
 
-for i in range(len(pg.linac.segments)):
+for i in range(len(ac.linac.segments)):
     #print("A")
-    Xc,Yc,Zc = data_for_cylinder_along_z(0.,0.,pg.linac.segments[i].R,pg.linac.segments[i].l, pg.linac.seg_positions1[i])
+    Xc,Yc,Zc = data_for_cylinder_along_z(0.,0.,ac.linac.segments[i].R,ac.linac.segments[i].l, ac.linac.seg_positions1[i])
     ax.plot_surface(Zc, Xc, Yc, color="red", alpha=0.5)
 
 # Make data.
