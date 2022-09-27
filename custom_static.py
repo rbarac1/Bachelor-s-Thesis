@@ -35,16 +35,16 @@ linac.t0 = 100
 for part in linac.particles:
     part.starts = 4
 
-#linac.evolve()
+linac.evolve()
 #print(linac.beam[0].r[-1,2])
 
 #custom parts
-linac.add_segment(lc.electrode(0.2, 0.3))
-linac.add_segment(lc.electrode(0.5, 0.3))
-linac.add_segment(lc.electrode(0.7, 0.3))
-linac.add_segment(lc.collimator(0.5, 0.05))
+# linac.add_segment(lc.electrode(0.2, 0.3))
+# linac.add_segment(lc.electrode(0.5, 0.3))
+# linac.add_segment(lc.electrode(0.7, 0.3))
+# linac.add_segment(lc.collimator(0.5, 0.05))
 
-linac.d = [0.05,0.3,0.6,0.8]
+# linac.d = [0.05,0.3,0.6,0.8]
 
 
 #particle plotting
@@ -53,7 +53,7 @@ for i in range(len(linac.particles)):
     y = linac.particles[i].r[:,1]
     z = linac.particles[i].r[:,2]
 
-    #ax.plot(z,x,y, c="b", label="particle" if i==0 else "")
+    ax.plot(z,x,y, c="b", label="čestica" if i==0 else "")
 
 
 #cylinder plotting
@@ -80,19 +80,23 @@ for i in range(len(linac.segments)):
 # ax.set(zlim3d=(-linac.segments[1].R*1.3, linac.segments[1].R*1.3), zlabel='Y')
 
 ax.set(xlim3d=(0, linac.seg_positions2[-1]+(linac.seg_positions2[-1]-linac.seg_positions1[-1])*0.5), xlabel='Z[m]')
-ax.set(ylim3d=(-linac.segments[1].R*1.3, linac.segments[1].R*1.3), ylabel='X[m]')
-ax.set(zlim3d=(-linac.segments[1].R*1.3, linac.segments[1].R*1.3), zlabel='Y[m]')
+ax.set(ylim3d=(-linac.segments[0].R*1.3, linac.segments[0].R*1.3), ylabel='X[m]')
+ax.set(zlim3d=(-linac.segments[0].R*1.3, linac.segments[0].R*1.3), zlabel='Y[m]')
 
 #plt.yticks(rotation=20)
 ax.yaxis.labelpad = 20
 ax.zaxis.labelpad = 10
 ax.xaxis.labelpad = 8
 
+#rotating the view
+ax.view_init(12,-65)
+
 
 ax.xaxis.label.set_size(16)
 ax.yaxis.label.set_size(16)
 ax.zaxis.label.set_size(16)
-#plt.legend()
+plt.legend()
 #plt.title("Collimator test", fontsize=20)
+plt.title("Test kolimatora", fontsize=20)
 plt.tight_layout()
 plt.show()

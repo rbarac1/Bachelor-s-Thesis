@@ -6,12 +6,12 @@ c = 299792458   #speed of light
 
 
 #CERN Linac4
-Vmax = 3e5  #max source voltage
-omega = 352e6*2*np.pi   #AC frequency
+# Vmax = 3e5  #max source voltage
+# omega = 352e6*2*np.pi   #AC frequency
 
 #protons and ions
-# Vmax = 5e7
-# omega = 300e6
+Vmax = 5e7
+omega = 300e6
 
 #T=2*pi/omega=1/3e8
 
@@ -95,7 +95,7 @@ class particle:
     def move(self, met="RK4"):      #numerically move the particle by a step
         #variable timesteps
         if self.v[-1,2]>2e8:
-            self.dt = self.dtc
+            self.dt = self.dtc*3
             if self.dtpos[4] != 1:
                 self.dtpos[4] = len(self.t)
                 
@@ -593,7 +593,7 @@ class accelerator:
         N_gaps = len(self.d)
         #print("EVOLVE1")
         #print(self.beam[0].r[-1, 2], self.seg_positions1[-1], self.seg_positions2[-1])
-        while self.beam[0].r[-1, 2]<self.seg_positions2[-1]+(self.seg_positions2[-1]-self.seg_positions1[-1])*4:      #steps loop
+        while self.beam[0].r[-1, 2]<self.seg_positions2[-1]+(self.seg_positions2[-1]-self.seg_positions1[-1])*0.5:      #steps loop
             N = len(self.beam)
 
             if mod_dt==0 and self.beam[0].t[-1]>0.95*self.t0:

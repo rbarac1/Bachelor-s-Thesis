@@ -87,6 +87,7 @@ print("first collimator escape time: ", linac.t0)
 print("total time: ", linac.beam[0].t[-1])
 print("Energies at the end of each segment in MeV: ", linac.beam[0].E_MeV)
 linac.remove_particles()
+linac.change_to_collimator(linac.segments[0].l, linac.segments[0].R)
 
 #collimator
 
