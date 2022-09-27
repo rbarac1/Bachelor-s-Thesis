@@ -1,4 +1,5 @@
 from turtle import color
+from accelerator import Nsteps
 import accelerator_construction as ac
 import numpy as np
 
@@ -136,7 +137,7 @@ ax.set(zlim3d=(-ac.linac.segments[1].R*1.3, ac.linac.segments[1].R*1.3), zlabel=
 # ax.set(zlim3d=(0, 1), zlabel='Z')
 
 # Creating the Animation object
-ani = animation.FuncAnimation(fig, update_lines, 300, fargs=(particles, lines), interval=10)
+ani = animation.FuncAnimation(fig, update_lines, Nsteps, fargs=(particles, lines), interval=10)
 
 # Make data.
 # X = np.linspace(-0.1, 0.1)
